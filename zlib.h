@@ -74,6 +74,19 @@ extern "C" {
   crash even in case of corrupted input.
 */
 
+/* Added rsync-friendly support to deflate, using patches from UHU-Linux:
+ * http://svn.uhulinux.hu/packages/dev/zlib/patches/,  modified
+ * If there is an environment variable ZLIB_RSYNC set to an non-empty
+ * string different from "0", then global variable zlib_rsync_dflt is set to 1
+ * in zlib_rsync_init()
+ * zlib_rsync_init() is called at some points in deflate.c if zlib_rsync_set is 0
+ * (in deflateInit2_, deflateParams)
+ * Please note that _tr_flush_block prototype is changed
+ * and deflate_state [ struct internal_state ] is changed (rsync_sum and rsync_chunk_end added)
+ * As they are internal, this should not be a problem
+ */
+
+
 typedef voidpf (*alloc_func) OF((voidpf opaque, uInt items, uInt size));
 typedef void   (*free_func)  OF((voidpf opaque, voidpf address));
 
@@ -688,6 +701,60 @@ ZEXTERN int ZEXPORT deflateSetHeader OF((z_streamp strm,
 
       deflateSetHeader returns Z_OK if success, or Z_STREAM_ERROR if the source
    stream state was inconsistent.
+*/
+
+ZEXTERN int ZEXPORT deflateSetRsyncDflt OF((int zlrs));
+ZEXTERN int ZEXPORT deflateGetRsyncDflt OF(());
+ZEXTERN int ZEXPORT deflateSetStrRsync OF((z_streamp strm, int zlrs));
+ZEXTERN int ZEXPORT deflateGetStrRsync OF((z_streamp strm));
+
+/*
+   deflate*Rsync* are for rsync-friendly deflate option
+   There is a static variable ( zlib_rsync_dflt in deflate.c ) determining whether
+     deflate output will be rsync-friendly;
+     zlib_rsync_dflt == 0 means not (standard deflate)
+     zlib_rsync_dflt == 1 means rsync-friendly deflate
+     zlib_rsync_dflt == -1 means not yet set
+    The zlib_rsync_dflt value can be set explicitely using deflateSetRsyncDflt, or otherwise
+      ZLIB_RSYNC environtment variable is checked; if it is non-empty with value different from "0",
+      then zlib_rsync_dflt is set to 1 (see zlib_rsync_init() in deflate.c)
+    Value of zlib_rsync_dflt is checked via deflateGetRsyncDflt() function
+      in lm_init, and stored in deflate stream state (deflate_state, zlib_rsync)
+    The value of zlib_rsync of a deflate stream can be read using deflateGetStrRsync(),
+      and set using deflateSetStrRsync();
+
+    deflateSetRsyncDflt(int zlrs)
+      return Z_STREAM_ERROR if zlrs < 0;
+      otherwise sets zlib_rsync_dflt to 1 if zlrs > 0, to 0 if 0 and returns Z_OK
+
+    deflateGetRsyncDflt()
+      if zlib_rsync_dflt not set (initial value of -1), set it to 0 or 1 based
+      on ZLIB_RSYNC envinronment variable contents - see above;
+      returns new value, which is 0 or 1
+
+    deflateGetStrRsync(z_streamp strm)
+      returns zlib_rsync value for strm;
+      must be called after deflateInit() or deflateInit2() and before deflateEnd()
+      returns Z_STREAM_ERROR if no deflate state is allocated
+      Otherwise returns value of strm->state->zlib_rsync, which is 0 or 1
+
+    deflateSetStrRsync(z_streamp strm, int zlrs)
+      must be called immediately after deflateReset(), deflateInit() or deflateInit2() on strm;
+      results are undefined otherwise
+      returns Z_STREAM_ERROR if strm has no state (not initialized) or if zlrs < 0;
+      sets strm->state->zlib_rsync to 0 if zlrs==0, or 1 otherwise
+      returns previous value of strm->state->zlib_rsync
+
+   NOTES:
+      - zlib_rsync_dflt is common to all threads
+      - its value affects newly created (or reset via deflateReset() ) streams;
+      - there is no need to change application code at all to get deflate rsync-friendly output
+        all is needed is to set environment variable ZLIB_RSYNC to 1, e.g.
+        ZLIB_RSYNC=1; export ZLIB_RSYNC  in Bourne shell, or
+        env ZLIB_RSYNC=1 a_program_using_zlib
+	If zlib_rsync_dflt is not set explicitely, ZLIB_RSYNC valued is read
+        first time deflateGetRsyncDflt() is called (and it is called in deflateReset())
+      - zlib_rsync_dflt value can be set explicitely using deflateSetRsyncDflt;
 */
 
 /*

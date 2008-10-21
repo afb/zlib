@@ -15,6 +15,10 @@ EXPORTS
     deflateParams
     deflateBound
     deflatePrime
+    deflateSetStrRsync
+    deflateGetStrRsync
+    deflateSetRsyncDflt
+    deflateGetRsyncDflt
     inflateSetDictionary
     inflateSync
     inflateCopy

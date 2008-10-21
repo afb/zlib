@@ -918,10 +918,11 @@ void _tr_align(s)
  * Determine the best encoding for the current block: dynamic trees, static
  * trees or store, and output the encoded block to the zip file.
  */
-void _tr_flush_block(s, buf, stored_len, eof)
+void _tr_flush_block(s, buf, stored_len, pad, eof)
     deflate_state *s;
     charf *buf;       /* input block, or NULL if too old */
     ulg stored_len;   /* length of input block */
+    int pad;          /* pad output to byte boundary */
     int eof;          /* true if this is the last block for a file */
 {
     ulg opt_lenb, static_lenb; /* opt_len and static_len in bytes */
@@ -1010,6 +1011,12 @@ void _tr_flush_block(s, buf, stored_len, eof)
 #ifdef DEBUG
         s->compressed_len += 7;  /* align on byte boundary */
 #endif
+#ifdef DEBUG
+    } else if (pad && (s->compressed_len % 8) != 0) {
+#else
+    } else if (pad) {
+#endif
+        _tr_stored_block(s, buf, 0, eof);
     }
     Tracev((stderr,"\ncomprlen %lu(%lu) ", s->compressed_len>>3,
            s->compressed_len-7*eof));

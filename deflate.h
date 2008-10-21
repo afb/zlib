@@ -260,6 +260,10 @@ typedef struct internal_state {
      * are always zero.
      */
 
+    ulg rsync_sum;      /* rolling sum of rsync window */
+    ulg rsync_chunk_end; /* next rsync sequence point */
+    int zlib_rsync;      /* 0 or 1; if not zero - make rsync-friendly output */
+
 } FAR deflate_state;
 
 /* Output a byte on the stream.
@@ -282,7 +286,7 @@ typedef struct internal_state {
 void _tr_init         OF((deflate_state *s));
 int  _tr_tally        OF((deflate_state *s, unsigned dist, unsigned lc));
 void _tr_flush_block  OF((deflate_state *s, charf *buf, ulg stored_len,
-                          int eof));
+                          int pad, int eof));
 void _tr_align        OF((deflate_state *s));
 void _tr_stored_block OF((deflate_state *s, charf *buf, ulg stored_len,
                           int eof));
