@@ -60,7 +60,11 @@
 #define SUFFIX_LEN (sizeof(GZ_SUFFIX)-1)
 
 #define BUFLEN      16384
+#if defined(WIN32) || defined(__CYGWIN__) || defined(unix) || defined(__unix__)
+#define MAX_NAME_LEN 4096
+#else
 #define MAX_NAME_LEN 1024
+#endif
 
 #ifdef MAXSEG_64K
 #  define local static
@@ -194,10 +198,14 @@ void file_compress(file, mode)
     char  *file;
     char  *mode;
 {
-    local char outfile[MAX_NAME_LEN];
+    local char outfile[MAX_NAME_LEN+16];
     FILE  *in;
     gzFile out;
 
+    if (strlen(file) > MAX_NAME_LEN) {
+        fprintf(stderr, "%s: too long file name %s\n", prog, file);
+        exit(1);
+    }
     strcpy(outfile, file);
     strcat(outfile, GZ_SUFFIX);
 
@@ -223,12 +231,16 @@ void file_compress(file, mode)
 void file_uncompress(file)
     char  *file;
 {
-    local char buf[MAX_NAME_LEN];
+    local char buf[MAX_NAME_LEN+16];
     char *infile, *outfile;
     FILE  *out;
     gzFile in;
     uInt len = (uInt)strlen(file);
 
+    if (len > MAX_NAME_LEN) {
+        fprintf(stderr, "%s: too long file name %s\n", prog, file);
+        exit(1);
+    }
     strcpy(buf, file);
 
     if (len > SUFFIX_LEN && strcmp(file+len-SUFFIX_LEN, GZ_SUFFIX) == 0) {

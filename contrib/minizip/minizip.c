@@ -32,7 +32,11 @@
 
 
 #define WRITEBUFFERSIZE (16384)
+#if defined(WIN32) || defined(unix) || defined(__unix__) || defined(__CYGWIN__)
+#define MAXFILENAME (4096)
+#else
 #define MAXFILENAME (256)
+#endif
 
 #ifdef WIN32
 uLong filetime(f, tmzip, dt)
