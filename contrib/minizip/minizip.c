@@ -1,8 +1,10 @@
 /*
    minizip.c
+   Version 1.01f, October 21th, 2008 (W. Pilorz), based on
    Version 1.01e, February 12th, 2005
 
    Copyright (C) 1998-2005 Gilles Vollant
+   
 */
 
 #include <stdio.h>
@@ -133,15 +135,19 @@ int check_exist_file(filename)
 
 void do_banner()
 {
-    printf("MiniZip 1.01b, demo of zLib + Zip package written by Gilles Vollant\n");
+    printf("MiniZip 1.01e, demo of zLib + Zip package written by Gilles Vollant\n");
+    printf("  rsync-friendly support added 2008 W.Pilorz \n");
     printf("more info at http://www.winimage.com/zLibDll/unzip.html\n\n");
 }
 
 void do_help()
 {
-    printf("Usage : minizip [-o] [-a] [-0 to -9] [-p password] file.zip [files_to_add]\n\n" \
+    printf("Usage : minizip [-o] [-a] [-q] [-0 to -9] [-p password] file.zip [files_to_add]\n\n" \
            "  -o  Overwrite existing file.zip\n" \
            "  -a  Append to existing file.zip\n" \
+           "  -s  Request rsync-friendly deflate output\n" \
+           "      (same as exporting ZLIB_RSYNC=1 environment variable) \n" \
+           "  -q  Be more quiet\n" \
            "  -0  Store only\n" \
            "  -1  Compress faster\n" \
            "  -9  Compress better\n\n");
@@ -193,6 +199,8 @@ int main(argc,argv)
 {
     int i;
     int opt_overwrite=0;
+    int opt_quiet=0;
+    int opt_rsyncable = 0;
     int opt_compress_level=Z_DEFAULT_COMPRESSION;
     int zipfilenamearg = 0;
     char filename_try[MAXFILENAME+16];
@@ -203,9 +211,9 @@ int main(argc,argv)
     const char* password=NULL;
 
 
-    do_banner();
     if (argc==1)
     {
+        do_banner();
         do_help();
         return 0;
     }
@@ -224,6 +232,10 @@ int main(argc,argv)
                         opt_overwrite = 1;
                     if ((c=='a') || (c=='A'))
                         opt_overwrite = 2;
+                    if ((c=='s') || (c=='S'))
+                        opt_rsyncable = 1;
+                    if ((c=='q') || (c=='Q'))
+                        opt_quiet += 1;
                     if ((c>='0') && (c<='9'))
                         opt_compress_level = c-'0';
 
@@ -239,6 +251,10 @@ int main(argc,argv)
                     zipfilenamearg = i ;
         }
     }
+    if (! opt_quiet)
+    {
+        do_banner();
+    }
 
     size_buf = WRITEBUFFERSIZE;
     buf = (void*)malloc(size_buf);
@@ -246,6 +262,9 @@ int main(argc,argv)
     {
         printf("Error allocating memory\n");
         return ZIP_INTERNALERROR;
+    }
+    if (opt_rsyncable) {
+        deflateSetRsyncDflt(1);
     }
 
     if (zipfilenamearg==0)
@@ -319,13 +338,18 @@ int main(argc,argv)
             err= ZIP_ERRNO;
         }
         else
-            printf("creating %s\n",filename_try);
+        {
+            if (!opt_quiet)
+                printf("creating %s\n",filename_try);
+        }
 
         for (i=zipfilenamearg+1;(i<argc) && (err==ZIP_OK);i++)
         {
             if (!((((*(argv[i]))=='-') || ((*(argv[i]))=='/')) &&
                   ((argv[i][1]=='o') || (argv[i][1]=='O') ||
                    (argv[i][1]=='a') || (argv[i][1]=='A') ||
+                   (argv[i][1]=='s') || (argv[i][1]=='S') ||
+                   (argv[i][1]=='q') || (argv[i][1]=='Q') ||
                    (argv[i][1]=='p') || (argv[i][1]=='P') ||
                    ((argv[i][1]>='0') || (argv[i][1]<='9'))) &&
                   (strlen(argv[i]) == 2)))

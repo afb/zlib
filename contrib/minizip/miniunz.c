@@ -152,6 +152,9 @@ void do_banner()
     printf("more info at http://www.winimage.com/zLibDll/unzip.html\n\n");
 }
 
+
+int opt_quiet = 0;  /* incremented if -q specified */
+
 void do_help()
 {
     printf("Usage : miniunz [-e] [-x] [-v] [-l] [-o] [-p password] file.zip [file_to_extr.] [-d extractdir]\n\n" \
@@ -161,6 +164,7 @@ void do_help()
            "  -l  list files\n" \
            "  -d  directory to extract into\n" \
            "  -o  overwrite files without prompting\n" \
+           "  -q  be more quiet\n" \
            "  -p  extract crypted file using password\n\n");
 }
 
@@ -282,7 +286,8 @@ int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
     {
         if ((*popt_extract_without_path)==0)
         {
-            printf("creating directory: %s\n",filename_inzip);
+            if (!opt_quiet)
+                printf("creating directory: %s\n",filename_inzip);
             mymkdir(filename_inzip);
         }
     }
@@ -358,7 +363,8 @@ int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
 
         if (fout!=NULL)
         {
-            printf(" extracting: %s\n",write_filename);
+            if (!opt_quiet)
+                printf(" extracting: %s\n",write_filename);
 
             do
             {
@@ -478,9 +484,9 @@ int main(argc,argv)
     const char *dirname=NULL;
     unzFile uf=NULL;
 
-    do_banner();
     if (argc==1)
     {
+        do_banner();
         do_help();
         return 0;
     }
@@ -505,6 +511,8 @@ int main(argc,argv)
                         opt_do_extract = opt_do_extract_withoutpath = 1;
                     if ((c=='o') || (c=='O'))
                         opt_overwrite=1;
+                    if ((c=='q') || (c=='Q'))
+                        opt_quiet += 1;
                     if ((c=='d') || (c=='D'))
                     {
                         opt_extractdir=1;
@@ -527,6 +535,8 @@ int main(argc,argv)
             }
         }
     }
+    if (!opt_quiet)
+        do_banner();
 
     if (zipfilename!=NULL)
     {

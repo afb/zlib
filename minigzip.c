@@ -1,5 +1,6 @@
 /* minigzip.c -- simulate gzip using the zlib compression library
  * Copyright (C) 1995-2005 Jean-loup Gailly.
+ *               2008 W.Pilorz: added -s, --rsyncable, --help, --, removed long filename buffer overflows
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
@@ -275,8 +276,26 @@ void file_uncompress(file)
  *   -f : compress with Z_FILTERED
  *   -h : compress with Z_HUFFMAN_ONLY
  *   -r : compress with Z_RLE
+ *   --rsyncable : make deflate output rsync friendly
+ *   -s : alias to --rsyncable; also can set environment variable ZLIB_RSYNC=1
  *   -1 to -9 : compression level
+ *   --help : this help
  */
+
+void usage()
+{
+   printf("%s\n", "Usage:  minigzip [-d] [-f] [-h] [-r] [-s] [-1 to -9] [files...]" );
+   printf("%s\n", "  -d : decompress"                   );
+   printf("%s\n", "  -f : compress with Z_FILTERED"     );
+   printf("%s\n", "  -h : compress with Z_HUFFMAN_ONLY" );
+   printf("%s\n", "  -r : compress with Z_RLE"          );
+   printf("%s\n", "  --rsyncable : make deflate output rsync friendly");
+   printf("%s\n", "  -s : alias to --rsyncable; also can set environment variable ZLIB_RSYNC=1");
+   printf("%s\n", "  -1 to -9 : compression level" );
+   printf("%s\n", "  --help : this help"           );
+   printf("%s\n", "  -- : end of options "         );
+}
+
 
 int main(argc, argv)
     int argc;
@@ -285,6 +304,7 @@ int main(argc, argv)
     int uncompr = 0;
     gzFile file;
     char outmode[20];
+    int rsyncable = 0;
 
     strcpy(outmode, "wb6 ");
 
@@ -300,12 +320,27 @@ int main(argc, argv)
         outmode[3] = 'h';
       else if (strcmp(*argv, "-r") == 0)
         outmode[3] = 'R';
+      else if (strcmp(*argv, "-s") == 0)
+        ++rsyncable;
+      else if (strcmp(*argv, "--help") == 0) {
+        usage();
+        exit(4);
+      }
+      else if (strcmp(*argv, "--") == 0) {
+        argc--, argv++;
+        break;
+      }
+      else if (strcmp(*argv, "--rsyncable") == 0)
+        ++rsyncable;
       else if ((*argv)[0] == '-' && (*argv)[1] >= '1' && (*argv)[1] <= '9' &&
                (*argv)[2] == 0)
         outmode[2] = (*argv)[1];
       else
         break;
       argc--, argv++;
+    }
+    if (rsyncable) {
+        deflateSetRsyncDflt(1);
     }
     if (outmode[3] == ' ')
         outmode[3] = 0;
