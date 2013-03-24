@@ -217,7 +217,7 @@ local void zlib_rsync_init(void)
         return;
     }
     const char *zrenv = getenv("ZLIB_RSYNC");
-    if (zrenv != NULL && *zrenv != 0 && strcmp(zrenv, "0") ) 
+    if (zrenv != NULL && *zrenv != 0 && strcmp(zrenv, "0") )
         zlib_rsync_dflt = 1;
     else
         zlib_rsync_dflt = 0;
@@ -1939,7 +1939,7 @@ local block_state deflate_slow(s, flush)
             if (s->zlib_rsync && s->strstart > s->rsync_chunk_end) {
                 s->rsync_chunk_end = 0xFFFFFFFFUL;
                 bflush = 2;
-            } 
+            }
             if (bflush) FLUSH_BLOCK(s, 0, bflush-1);
 
         } else if (s->match_available) {
@@ -1952,7 +1952,7 @@ local block_state deflate_slow(s, flush)
             if (s->zlib_rsync && s->strstart > s->rsync_chunk_end) {
                 s->rsync_chunk_end = 0xFFFFFFFFUL;
 		bflush = 2;
-            } 
+            }
             if (bflush) {
                 FLUSH_BLOCK_ONLY(s, 0, bflush-1);
             }
@@ -1969,7 +1969,7 @@ local block_state deflate_slow(s, flush)
                 s->rsync_chunk_end = 0xFFFFFFFFUL;
                 bflush = 2;
                 FLUSH_BLOCK(s, 0, bflush-1);
-            } 
+            }
             s->match_available = 1;
             RSYNC_ROLL(s, s->strstart, 1);
             s->strstart++;
